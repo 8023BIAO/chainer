@@ -324,23 +324,27 @@ end
 local function getRangesList(matching, targetAddressState)
   local readableRanges = {}
   local interNameSet = {}
+  local internalNameRangesMap = {}
+  local rangesList = gg.getRangesList(matching)
 
-  for _, range in ipairs(gg.getRangesList(matching)) do
+  for _, range in ipairs(rangesList) do
     local internalName = range.internalName:gsub('^.*/', ''):gsub(':bss$', '')
     interNameSet[internalName] = true
+    if not internalNameRangesMap[internalName] then
+      internalNameRangesMap[internalName] = {}
+    end
+    table.insert(internalNameRangesMap[internalName], range)
   end
 
   for internalName in pairs(interNameSet) do
-    for rangeIndex, range in ipairs(gg.getRangesList(internalName)) do
+    for rangeIndex, range in ipairs(internalNameRangesMap[internalName]) do
       if range.type:sub(2, 2) == 'w' then
         if targetAddressState and range.state == targetAddressState then
           range.internalName = string.format('[%s]%s[%d]', range.state, internalName, rangeIndex)
           table.insert(readableRanges, range)
-         elseif not targetAddressState then
-          if tableContains(staticHeaderState, range.state) then
-            range.internalName = string.format('[%s]%s[%d]', range.state, internalName, rangeIndex)
-            table.insert(readableRanges, range)
-          end
+         elseif not targetAddressState and tableContains(staticHeaderState, range.state) then
+          range.internalName = string.format('[%s]%s[%d]', range.state, internalName, rangeIndex)
+          table.insert(readableRanges, range)
         end
       end
     end
