@@ -12,7 +12,7 @@ local string = string
 
 local gg = require 'gg'
 
-local main -- 入口函数
+local main
 local config
 local filePath = gg.getFile()
 local targetInfo = gg.getTargetInfo()
@@ -256,9 +256,6 @@ local codeLocale = {
 
 }
 
--- 在 tabl 中查找元素 返回布尔值
--- @param tbl table
--- @param val any
 local function tableContains(tbl, val)
   for _, value in pairs(tbl) do
     if value == val then
@@ -268,10 +265,6 @@ local function tableContains(tbl, val)
   return false
 end
 
--- 在 tbl 查找元素在数组中的位置 返回索引
--- @param tbl table
--- @param val any
--- @return number
 local function tableFindIndex(tbl, val)
   for index, value in pairs(tbl) do
     if value == val then
@@ -422,9 +415,6 @@ local function binarySearchRightBoundary(arr, target)
   return ral
 end
 
--- 该函数用于生成一个路径链，通过递归遍历给定路径下的数据结构。
--- @param path 要遍历的数据结构所在的文件路径
--- @return 符合条件的路径链，或nil如果没有找到
 local function generate(path)
   local function getSize(tableToCheck)
     if type(tableToCheck) ~= 'table' then
@@ -684,10 +674,6 @@ local function searchChains(parametersTable)
   end
 end
 
--- 获取目标地址的状态
--- @param TargetAddress 目标地址，需要检查的地址
--- @param strMatch 用于匹配的范围列表的标识符
--- @return 返回目标地址所在的内存范围名称
 local function getTargetAddressState(TargetAddress, strMatch)
   local rangesList, state = gg.getRangesList(strMatch)
   for index, range in ipairs(rangesList) do
@@ -700,9 +686,6 @@ local function getTargetAddressState(TargetAddress, strMatch)
   return state
 end
 
--- 解析目标数字，将其分解为由RANGES_SELECT数组指定的值的组合。
--- @param: targetNumber - 需要解析的目标数字。
--- @return: selected  一个包含所选值的表，这些值的组合等于目标数字。
 local function parseTargetNumber(targetNumber)
   local selected = {}
   local remainingNumber = targetNumber
@@ -717,12 +700,6 @@ local function parseTargetNumber(targetNumber)
   return selected
 end
 
--- 比较两个表是否相同
--- @param tbl1 第一个表
--- @param tbl2 第二个表
--- @param tbl3 第三个表，用于存储比较结果
--- @param chainsNum 用于存储链的数量
--- @param isSame 用于存储是否相同
 local function contrastChain(tbl1, tbl2, tbl3, chainsNum, isSame)
   isSame.val = true
   local key
@@ -755,10 +732,6 @@ local function contrastChain(tbl1, tbl2, tbl3, chainsNum, isSame)
   end
 end
 
--- 解析链表表格，生成地址和标志位信息
--- @param chainsTable 链表表格，包含多个链的信息
--- @param _is64Bit 是否为64位系统，默认为false
--- @return 返回一个包含地址和标志位信息的表格
 local function parseChainTable(chainsTable, _is64Bit)
   local headerTable = {}
   local contentTable = {}
@@ -831,10 +804,6 @@ local function parseChainTable(chainsTable, _is64Bit)
   return (next(tempResultTable) and tempResultTable)
 end
 
--- 解析并处理链表数据
--- @param targetFlags 目标标志位
--- @param _is64Bit 是否为64位游戏
--- @param ContentTable 包含链表数据的表格
 local function parseChains(targetFlags, _is64Bit, ContentTable)
   local selfPath = gg.getFile()
   local startTime = os.clock()
@@ -966,21 +935,11 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
   codeLocale.chains, outChainsNum))
 end
 
--- 保存链表文件
--- @param root 链表
--- @param path 输出路径
 local function outputTableFile(root, path)
   gg.saveVariable(root, path)
   print(codeLocale.tableFile .. path)
 end
 
--- 函数用于解析嵌套的 Lua 表，并根据特定的规则生成字符串。
--- @param tbl 需要解析的嵌套表
--- @param path 当前解析路径，用于记录嵌套层次
--- @param outFile 可选的输出函数，用于处理生成的字符串
--- @param chainsNum 用于记录解析到的特定结构的数量
--- 该函数递归地遍历嵌套表，当遇到值为1的键时，会根据路径生成特定的字符串格式，并可以通过outFile函数输出。
--- 注意：该函数会修改传入的path和chainsNum参数。
 local function chainsTableParse(tbl, path, outFile, chainsNum)
   local _next = next
   local _type = type
@@ -1023,10 +982,6 @@ local function chainsTableParse(tbl, path, outFile, chainsNum)
   end
 end
 
--- outputExecuTable 函数用于生成一个包含链表信息的 Lua 文件。
--- @param root 链表的根节点
--- @param path 输出文件的路径
--- @param targetFlags 目标标志
 local function outputExecuTable(root, path, targetFlags)
   local uotFile = io.open(path, 'w+')
   if not uotFile then return end
@@ -1095,17 +1050,17 @@ local function searchBaseAddress()
   end
 
   local prompValueName = {
-    codeLocale.pointerDepth, -- 深度
-    codeLocale.pointerOffset, -- 偏移
-    codeLocale.pointerLimitPerLayer, -- 每层条目限制
+    codeLocale.pointerDepth, 
+    codeLocale.pointerOffset, 
+    codeLocale.pointerLimitPerLayer, 
 
-    codeLocale.scanToStop, -- 停止扫描
-    codeLocale.startAddress,-- 开始地址
-    codeLocale.endAddress, -- 结束地址
+    codeLocale.scanToStop, 
+    codeLocale.startAddress,
+    codeLocale.endAddress, 
 
-    codeLocale.outputFilePath, -- 输出文件路径
-    codeLocale.outputToTableFile, -- 输出链表文件
-    codeLocale.outputToCheckFile, -- 输出校验文件
+    codeLocale.outputFilePath, 
+    codeLocale.outputToTableFile, 
+    codeLocale.outputToCheckFile, 
   }
 
   for _, range in ipairs(readableRanges) do
