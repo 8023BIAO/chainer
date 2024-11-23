@@ -350,6 +350,10 @@ local function getRangesList(matching, targetAddressState)
     end
   end
 
+  table.sort(readableRanges, function (a, b)
+    return #a.internalName < #b.internalName
+  end)
+
   return readableRanges
 end
 
