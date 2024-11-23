@@ -609,7 +609,7 @@ local function searchChains(parametersTable)
   for lvl = 1, depth do
     level[lvl] = {}
 
-    local skip, blockSize, blockIndex = 0, 8192, 1
+    local skip, blockSize, blockIndex = 0, 100000, 1
     while true do
       local results = gg.getResults(blockSize, skip)
       if #results == 0 then
@@ -1129,7 +1129,7 @@ local function searchBaseAddress()
     return
   end
 
-  local rangesSize = (targetAddressStateNum == 1048576 or targetAddressStateNum == -2080896) and targetAddressStateNum + 32 or targetAddressStateNum
+  local rangesSize = targetAddressStateNum
 
   for _, range in ipairs(readableRangesFile) do
     local state = range.internalName:match('^%[(.-)%]')
