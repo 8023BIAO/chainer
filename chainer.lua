@@ -4,7 +4,7 @@ local ipairs = ipairs
 local load = load
 local loadfile = loadfile
 local next = next
-local os = { clock = os.clock }
+local os = os
 local pairs = pairs
 local print = print
 local table = table
@@ -333,16 +333,16 @@ local function getRangesList(matching, targetAddressState)
   for internalName in pairs(interNameSet) do
     for rangeIndex, range in ipairs(gg.getRangesList(internalName)) do
       if range.type:sub(2, 2) == 'w' then
-        if tableContains(staticHeaderState, targetAddressState) then
+        if targetAddressState then
           if range.state == targetAddressState then
-            range.internalName = '[' .. range.state .. ']' .. internalName .. '[' .. rangeIndex .. ']'
+            range.internalName = string.format('[%s]%s[%d]', range.state, internalName, rangeIndex)
             table.insert(readableRanges, range)
             break
           end
-         else
+        else
           for _, value in pairs(staticHeaderState) do
             if range.state == value then
-              range.internalName = '[' .. range.state .. ']' .. internalName .. '[' .. rangeIndex .. ']'
+              range.internalName = string.format('[%s]%s[%d]', range.state, internalName, rangeIndex)
               table.insert(readableRanges, range)
               break
             end
@@ -378,7 +378,7 @@ local function outPathName(path, fileName)
     local file = io.open(outFilePath, 'r')
     if not file then
       break
-     else
+    else
       file:close()
     end
   end
@@ -393,7 +393,7 @@ local function binarySearchLeftBoundary(arr, target)
     if arr[mid].address >= target then
       ral = mid
       right = mid - 1
-     else
+    else
       left = mid + 1
     end
   end
@@ -408,7 +408,7 @@ local function binarySearchRightBoundary(arr, target)
     if arr[mid].address <= target then
       ral = mid
       left = mid + 1
-     else
+    else
       right = mid - 1
     end
   end
@@ -463,7 +463,7 @@ local function generate(path)
       pathDepth = pathDepth - 1
       results = backup[pathDepth]
       chain[#chain] = nil
-     else
+    else
       backup[pathDepth] = results
       results = results[navigationOptions[input]]
       table.insert(chain, navigationOptions[input])
@@ -475,7 +475,7 @@ local function generate(path)
   local file = io.open(path, 'r')
   if not file then
     return
-   else
+  else
     file:close()
   end
   local results = dofile(path)
@@ -550,7 +550,7 @@ local function loadChain(parametersTable)
               if currentLevel == 1 then
                 valueData[offset] = 1
                 chainsCount = chainsCount + 1
-               else
+              else
                 valueData[offset] = tempData
               end
 
@@ -565,7 +565,7 @@ local function loadChain(parametersTable)
 
               stopLoop = false
             end
-           else
+          else
             if binaryProcessedData then
               break
             end
@@ -580,7 +580,7 @@ local function loadChain(parametersTable)
         end
 
         value = nil
-       else
+      else
         currentLevelData[key] = nil
       end
 
@@ -607,28 +607,8 @@ local function searchChains(parametersTable)
   local chainsRef, level, maxOffset = parametersTable[4], parametersTable[5], parametersTable[6]
   local limit, binarySearchFunc, padding = parametersTable[7], parametersTable[8], parametersTable[9]
   local chainResultsIimit, startAddress, endAddress = parametersTable[10], parametersTable[11], parametersTable[12]
-  local targetAddressState = parametersTable[13]
 
   for lvl = 1, depth do
-    if lvl == 1 and tableContains(staticHeaderState, targetAddressState) then
-      local findStaticAddress = false
-      for _, range in ipairs(readableRanges) do
-        local results = gg.getResults(1, 0, range.start, range['end'])
-
-        if #results == 1 then
-          root[range.internalName] = { [results[1].address - range.start] = 1 }
-          chainsRef.count = 1
-          gg.removeResults(results)
-          findStaticAddress = true
-          break
-        end
-      end
-      if not findStaticAddress then
-        print(codeLocale.noMatchHeader)
-      end
-      break
-    end
-
     level[lvl] = {}
 
     local skip, blockSize, blockIndex = 0, 8192, 1
@@ -710,14 +690,14 @@ local function contrastChain(tbl1, tbl2, tbl3, chainsNum, isSame)
     if tbl2Val == 1 then
       tbl3[key] = 1
       chainsNum.num = chainsNum.num + 1
-     elseif type(tbl2Val) == 'table' then
+    elseif type(tbl2Val) == 'table' then
       if type(value) ~= 'table' then
         isSame.val = false
-       else
+      else
         tbl3[key] = {}
         contrastChain(value, tbl2Val, tbl3[key], chainsNum, isSame)
       end
-     elseif value ~= tbl2Val then
+    elseif value ~= tbl2Val then
       isSame.val = false
     end
     key = next(tbl1, key)
@@ -759,10 +739,10 @@ local function parseChainTable(chainsTable, _is64Bit)
       end
       if i == 1 then
         local headerAddress = (#chainOffsetTable ~= 1) and
-        (gg.getValues({ { address = header + offset, flags = flags } })[1].value & padding) or (header + offset)
+            (gg.getValues({ { address = header + offset, flags = flags } })[1].value & padding) or (header + offset)
 
         contentTable[i][#contentTable[i] + 1] = headerAddress
-       else
+      else
         contentTable[i][#contentTable[i] + 1] = offset
       end
     end
@@ -777,13 +757,13 @@ local function parseChainTable(chainsTable, _is64Bit)
         local previousValue = (i == 2) and contentTable[1][j] or tempResultTable[j]
         local currentValue = valueTable[j]
         tempResultTable[j] = { address = currentValue + previousValue, flags = flags }
-       elseif i == #contentTable then
+      elseif i == #contentTable then
         local previousResult = tempResultTable[j]
         local sumValue = previousResult and previousResult + valueTable[j] or valueTable[j]
         local resultAddress = string.format('0x%X', sumValue)
         if string.len(resultAddress) >= 10 then
           tempResultTable[j] = resultAddress
-         else
+        else
           tempResultTable[j] = nil
         end
       end
@@ -802,6 +782,38 @@ local function parseChainTable(chainsTable, _is64Bit)
   end
 
   return (next(tempResultTable) and tempResultTable)
+end
+
+local function outLoadChainerText(_is64Bit, soName, index, offsetTable)
+  local outText = getFunctionCode({ searchPointerAddress }) ..
+      '--searchPointerAddress([true 64bit | false 32bit], stringHeader, index, offsetTable)' ..
+      '\n local address = searchPointerAddress(' ..
+      tostring(_is64Bit) .. ', "' ..
+      soName .. '", ' ..
+      index .. ', {' ..
+      table.concat(offsetTable, ', ') ..
+      '}) \n\n gg.addListItems({{ address= address, flags = 4 , name = "Target Address" }})'
+  return outText
+end
+
+local function uotCopyFuncText(file, targetFlags, func)
+  if not file then return end
+  file:write(string.format(
+    'local codeLocale = %s\n\n%s \n local targetFlags = %s\n local chainTable = {\n',
+    getTableString(codeLocale),
+    getFunctionCode({
+      tableContains,
+      getTableString,
+      outPathName,
+      getFunctionCode,
+      searchPointerAddress,
+      parseChainTable,
+      outLoadChainerText,
+      uotCopyFuncText,
+      func
+    }),
+    targetFlags
+  ))
 end
 
 local function parseChains(targetFlags, _is64Bit, ContentTable)
@@ -845,32 +857,25 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
 
     for index, value in pairs(ContentTable) do
       selectShowTable[index] = string.format('[%d]: [%s]%s[%d] + %s', index, value[1], value[2], value[3],
-      table.concat(value['offset'], ' -> '))
+        table.concat(value['offset'], ' -> '))
     end
 
     local choiceIndex = gg.choice(selectShowTable, nil,
-    string.format(codeLocale.selectChainOut .. '(' .. codeLocale.time .. ':%.2f):', os.clock() - startTime))
+      string.format(codeLocale.selectChainOut .. '(' .. codeLocale.time .. ':%.2f):', os.clock() - startTime))
     if not choiceIndex then return end
 
     local chain = ContentTable[choiceIndex]
 
-    local outText = getFunctionCode({ searchPointerAddress }) ..
-    '\n--searchPointerAddress([true 64bit | false 32bit], stringHeader, index, offsetTable)' ..
-    '\n local address = searchPointerAddress(' ..
-    tostring(_is64Bit) .. ', "' ..
-    chain[2] .. '", ' ..
-    chain[3] .. ', {' ..
-    table.concat(chain['offset'], ', ') ..
-    '}) \n\n gg.addListItems({{ address= address, flags = 4 , name = "Target Address" }})'
+    local outText = outLoadChainerText(_is64Bit, chain[2], chain[3], chain['offset'])
 
     local input = gg.alert(outText, codeLocale.copyOffsets, codeLocale.run, codeLocale.outputFullCode)
     if not input then return end
 
     if input == 1 then
       gg.copyText(table.concat(chain, ', ') .. ' + ' .. table.concat(chain['offset'], ' -> '), false)
-     elseif input == 2 then
+    elseif input == 2 then
       load(outText)()
-     elseif input == 3 then
+    elseif input == 3 then
       local path = outPathName(selfPath)
       local file = io.open(path, 'w+')
       if not file then return end
@@ -882,7 +887,7 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
   end
 
   local selectionResult = gg.multiChoice(showSelectTable, nil,
-  string.format(codeLocale.selectChainOut .. '(' .. codeLocale.time .. ':%.2f):', os.clock() - startTime))
+    string.format(codeLocale.selectChainOut .. '(' .. codeLocale.time .. ':%.2f):', os.clock() - startTime))
   if not selectionResult then return end
 
   local path = outPathName(selfPath)
@@ -890,20 +895,7 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
   local uotputStartTime, outChainsNum = os.clock(), 0
   if not file then return end
 
-  file:write(string.format(
-  'local codeLocale = %s\n\n%s \n local targetFlags = %s\n local chainTable = {\n',
-  getTableString(codeLocale),
-  getFunctionCode({
-    tableContains,
-    getTableString,
-    outPathName,
-    getFunctionCode,
-    searchPointerAddress,
-    parseChainTable,
-    parseChains
-  }),
-  targetFlags
-  ))
+  uotCopyFuncText(file, targetFlags, parseChains)
 
   file:flush()
   local buffer = {}
@@ -913,7 +905,7 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
       local selectedAddress = storageAddresses[index]
       for chainIndex, chain in pairs(saveAddressPointerChain[selectedAddress]) do
         local chainInfo = string.format("[%d] = { '%s', '%s', %d, ['offset'] = { %s } },\n", chainIndex,
-        chain[1], chain[2], chain[3], table.concat(chain['offset'], ', '))
+          chain[1], chain[2], chain[3], table.concat(chain['offset'], ', '))
         table.insert(buffer, chainInfo)
         if #buffer >= bufferSize then
           file:write(table.concat(buffer))
@@ -928,11 +920,19 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
     file:write(table.concat(buffer))
     outChainsNum = outChainsNum + #buffer
   end
-  file:write('}\n\n parseChains(targetFlags, ' .. tostring(gg.getTargetInfo().x64) .. ', chainTable) return\n')
+
+  file:write('}\n\n xpcall(function() parseChains(targetFlags, ' ..
+    tostring(gg.getTargetInfo().x64) .. ', chainTable) end, print) return \n')
   file:close()
-  print(string.format('%s%s\n%s:%.2f %s%d', codeLocale.outputFilePath, path, codeLocale.time,
-  os.clock() - uotputStartTime,
-  codeLocale.chains, outChainsNum))
+
+  print(string.format('%s%s\n%s:%.2f %s%d',
+    codeLocale.outputFilePath,
+    path,
+    codeLocale.time,
+    os.clock() - uotputStartTime,
+    codeLocale.chains,
+    outChainsNum
+  ))
 end
 
 local function outputTableFile(root, path)
@@ -959,7 +959,7 @@ local function chainsTableParse(tbl, path, outFile, chainsNum)
     if _type(value) == 'table' then
       chainsTableParse(value, path, outFile, chainsNum)
       tblRemove(path)
-     elseif value == 1 then
+    elseif value == 1 then
       chainsNum.val = chainsNum.val + 1
       local header = path[1]
       local innerKey, outerKey, index = _match(header, '^%[(.-)%](.-)%[(%d+)%]$')
@@ -971,10 +971,10 @@ local function chainsTableParse(tbl, path, outFile, chainsNum)
 
       local offsetStr = tblConcat(offsetParts, ', ')
       local keyStr = _format("[%d] = { '%s', '%s', %d, ['offset'] = { %s } },\n",
-      chainsNum.val, innerKey, outerKey, index, offsetStr)
+        chainsNum.val, innerKey, outerKey, index, offsetStr)
       if outFile then outFile(keyStr) end
       tblRemove(path)
-     else
+    else
       tblRemove(path)
     end
 
@@ -987,20 +987,7 @@ local function outputExecuTable(root, path, targetFlags)
   if not uotFile then return end
   local chainsNum = { val = 0 }
 
-  uotFile:write(string.format(
-  'local codeLocale = %s\n\n%s \n local targetFlags = %s\n local chainTable = {\n',
-  getTableString(codeLocale),
-  getFunctionCode({
-    tableContains,
-    getTableString,
-    outPathName,
-    getFunctionCode,
-    searchPointerAddress,
-    parseChainTable,
-    parseChains
-  }),
-  targetFlags
-  ))
+  uotCopyFuncText(uotFile, targetFlags, parseChains)
 
   uotFile:flush()
   local buffer = {}
@@ -1020,7 +1007,9 @@ local function outputExecuTable(root, path, targetFlags)
     writeBuffer(uotFile)
   end
 
-  uotFile:write('}\n\n parseChains(targetFlags, ' .. tostring(is64Bit) .. ', chainTable)  return \n')
+  uotFile:write('}\n\n xpcall(function() parseChains(targetFlags, ' ..
+    tostring(is64Bit) .. ', chainTable) end, print) return \n')
+
   uotFile:close()
   print(codeLocale.fileValidation .. path .. ' ' .. codeLocale.chains .. chainsNum.val)
 end
@@ -1042,25 +1031,60 @@ local function searchBaseAddress()
     return
   end
 
-  local readableRanges = getRangesList('^/data/*lib*.so*$', targetAddressState)
+  local targetAddressStatiHeaderState = tableContains(staticHeaderState, targetAddressState)
+
+  local readableRanges = getRangesList('^/data/*lib*.so*$', targetAddressStatiHeaderState and targetAddressState)
 
   if #readableRanges == 0 then
     print(codeLocale.noMatchHeader)
     return
   end
 
+  local taargetAddressStateNum = RANGES_CODE[tableFindIndex(RANGES_SELECT, targetAddressState)]
+
+  if targetAddressStatiHeaderState then
+    local soName, index, offset
+    local originalRanges = gg.getRanges()
+    local originalResults = gg.getResults(gg.getResultsCount())
+
+    gg.clearResults()
+    gg.setRanges(taargetAddressStateNum)
+    gg.loadResults(selectResults)
+
+    for _, range in ipairs(readableRanges) do
+      local results = gg.getResults(1, 0, range.start, range['end'])
+      if #results == 1 then
+        soName, index = string.match(range.internalName, '^%[.-%](.-)%[(.-)%]$')
+        offset = results[1].address - range.start
+        gg.removeResults(results)
+        break
+      end
+    end
+
+    gg.setRanges(originalRanges)
+    gg.loadResults(originalResults)
+
+    local uotPath = outPathName(filePath, targetProcessName .. '.lua')
+    local outFile = io.open(uotPath, 'w+')
+    if not outFile then return end
+    outFile:write(outLoadChainerText(is64Bit, soName, index, { offset }))
+    outFile:close()
+    print(uotPath)
+    return
+  end
+
   local prompValueName = {
-    codeLocale.pointerDepth, 
-    codeLocale.pointerOffset, 
-    codeLocale.pointerLimitPerLayer, 
+    codeLocale.pointerDepth,
+    codeLocale.pointerOffset,
+    codeLocale.pointerLimitPerLayer,
 
-    codeLocale.scanToStop, 
+    codeLocale.scanToStop,
     codeLocale.startAddress,
-    codeLocale.endAddress, 
+    codeLocale.endAddress,
 
-    codeLocale.outputFilePath, 
-    codeLocale.outputToTableFile, 
-    codeLocale.outputToCheckFile, 
+    codeLocale.outputFilePath,
+    codeLocale.outputToTableFile,
+    codeLocale.outputToCheckFile,
   }
 
   for _, range in ipairs(readableRanges) do
@@ -1068,7 +1092,7 @@ local function searchBaseAddress()
   end
 
   local promptPresetConfig = config[targetPackage]['promptPreset'] or
-  { 3, 512, 0, 0, 0, -1, outPathName(filePath, targetProcessName .. '.lua'), true, true }
+      { 3, 512, 0, 0, 0, -1, outPathName(filePath, targetProcessName .. '.lua'), true, true }
 
   local promptPreset = promptPresetConfig
   promptPreset[7] = promptPresetConfig and outPathName(filePath, targetProcessName .. '.lua') or promptPresetConfig[7]
@@ -1110,12 +1134,12 @@ local function searchBaseAddress()
     return
   end
 
-  local rangesSize = RANGES_CODE[tableFindIndex(RANGES_SELECT, targetAddressState)]
+  local rangesSize = taargetAddressStateNum
   for _, range in ipairs(readableRangesFile) do
     local state = range.internalName:match('^%[(.-)%]')
     local containsState = tableContains(parseTargetNumber(rangesSize), state)
-    local num = containsState and 0 or RANGES_CODE[tableFindIndex(RANGES_SELECT, state)]
-    rangesSize = rangesSize + num
+    local stateNum = containsState and 0 or RANGES_CODE[tableFindIndex(RANGES_SELECT, state)]
+    rangesSize = rangesSize + stateNum
   end
 
   local originalRanges = gg.getRanges()
@@ -1148,7 +1172,7 @@ local function searchBaseAddress()
   local endTime = os.clock() - startTime
 
   local elapsedTime = string.format('\n' .. codeLocale.chains .. '%d\n' .. codeLocale.searchTime .. '%.2f',
-  chainsRef.count, endTime)
+    chainsRef.count, endTime)
   if chainsRef.count == 0 then
     print(elapsedTime)
     return
@@ -1157,9 +1181,9 @@ local function searchBaseAddress()
   if promptResult[8] and promptResult[9] then
     outputTableFile(root, promptResult[7])
     outputExecuTable(root, outPathName(promptResult[7]), targetFlags)
-   elseif promptResult[8] then
+  elseif promptResult[8] then
     outputTableFile(root, promptResult[7])
-   elseif promptResult[9] then
+  elseif promptResult[9] then
     outputExecuTable(root, promptResult[7], targetFlags)
   end
 
@@ -1185,23 +1209,16 @@ local function getChain(path)
     table.insert(offsetTable, chain[i])
   end
 
-  local outText = getFunctionCode({ searchPointerAddress }) ..
-  '\n--searchPointerAddress([true 64bit | false 32bit], stringHeader, index, offsetTable)' ..
-  '\n local address = searchPointerAddress(' ..
-  tostring(is64Bit) .. ', "' ..
-  soName .. '", ' ..
-  index .. ', {' ..
-  table.concat(offsetTable, ', ') ..
-  '}) \n\n gg.addListItems({{ address= address, flags = 4 , name = "targetAddress" }})'
+  local outText = outLoadChainerText(is64Bit, soName, index, offsetTable)
 
   local input = gg.alert(outText, codeLocale.copyOffsets, codeLocale.run, codeLocale.outputFullCode)
   if not input then return end
 
   if input == 1 then
     gg.copyText(table.concat(chain, ', '), false)
-   elseif input == 2 then
+  elseif input == 2 then
     load(outText)()
-   elseif input == 3 then
+  elseif input == 3 then
     local outpath = outPathName(path)
     local outfile = io.open(outpath, 'w+')
     if not outfile then return end
@@ -1215,14 +1232,14 @@ local function combinedComparison(mode)
   local promptValue
   if mode == 'table' then
     promptValue = gg.prompt({ codeLocale.file1, codeLocale.file2, codeLocale.outputFilePath },
-    { filePath, filePath, outPathName(filePath, codeLocale.compareByTable .. '.lua') },
-    { 'file', 'file', 'file' })
-   elseif mode == 'line' then
+      { filePath, filePath, outPathName(filePath, codeLocale.compareByTable .. '.lua') },
+      { 'file', 'file', 'file' })
+  elseif mode == 'line' then
     promptValue = gg.prompt(
-    { codeLocale.file1, codeLocale.file2, codeLocale.outputFilePath, codeLocale.contrastDifferently },
-    { filePath, filePath, outPathName(filePath, codeLocale.compareByLine .. '.lua'), false },
-    { 'file', 'file', 'file', 'checkbox' })
-   else
+      { codeLocale.file1, codeLocale.file2, codeLocale.outputFilePath, codeLocale.contrastDifferently },
+      { filePath, filePath, outPathName(filePath, codeLocale.compareByLine .. '.lua'), false },
+      { 'file', 'file', 'file', 'checkbox' })
+  else
     print(codeLocale.unsupportedMode)
     return
   end
@@ -1235,7 +1252,7 @@ local function combinedComparison(mode)
   if not file1 then
     print(promptValue[1] .. codeLocale.doesNotExist)
     return
-   else
+  else
     file1:close()
   end
 
@@ -1243,13 +1260,13 @@ local function combinedComparison(mode)
   if not file2 then
     print(promptValue[2] .. codeLocale.doesNotExist)
     return
-   else
+  else
     file2:close()
   end
 
   if mode == "table" then
     time, file1, file2, data, chainsNum, isSame = os.clock(), dofile(promptValue[1]), dofile(promptValue[2]), {},
-    { num = 0 }, { val = true }
+        { num = 0 }, { val = true }
     contrastChain(file1, file2, data, chainsNum, isSame)
     if isSame.val then
       getChain(promptValue[1])
@@ -1259,9 +1276,9 @@ local function combinedComparison(mode)
       gg.saveVariable(data, promptValue[3])
     end
     print(string.format(codeLocale.time .. ':%.2f\n' .. codeLocale.chains .. '%d\n %s', os.clock() - time,
-    chainsNum.num,
-    chainsNum.num > 0 and promptValue[3] or ''))
-   elseif mode == "line" then
+      chainsNum.num,
+      chainsNum.num > 0 and promptValue[3] or ''))
+  elseif mode == "line" then
     time, file1, file2 = os.clock(), readFile(promptValue[1]), readFile(promptValue[2])
     if not file1 or not file2 then return end
     data = {}
