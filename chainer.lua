@@ -27,7 +27,7 @@ if chunk then config = chunk() end
 config = config or {}
 config[targetPackage] = config[targetPackage] or {}
 
-local RANGES_CODE = {
+local rangesCode = {
   [1] = 1048576,
   [2] = 524288,
   [3] = 262144,
@@ -45,7 +45,7 @@ local RANGES_CODE = {
   [15] = -2080896
 };
 
-local RANGES_SELECT = {
+local rangesState = {
   [1] = 'V',
   [2] = 'As',
   [3] = 'PS',
@@ -670,10 +670,10 @@ local function parseTargetNumber(targetNumber)
   local selected = {}
   local remainingNumber = targetNumber
   while (remainingNumber ~= 0) do
-    for index, integer in ipairs(RANGES_CODE) do
+    for index, integer in ipairs(rangesCode) do
       if remainingNumber >= integer and remainingNumber ~= 0 then
         remainingNumber = remainingNumber - integer
-        table.insert(selected, RANGES_SELECT[index])
+        table.insert(selected, rangesState[index])
       end
     end
   end
@@ -1040,7 +1040,7 @@ local function searchBaseAddress()
     return
   end
 
-  local taargetAddressStateNum = RANGES_CODE[tableFindIndex(RANGES_SELECT, targetAddressState)]
+  local taargetAddressStateNum = rangesCode[tableFindIndex(rangesState, targetAddressState)]
 
   if targetAddressStatiHeaderState then
     local soName, index, offset
@@ -1138,7 +1138,7 @@ local function searchBaseAddress()
   for _, range in ipairs(readableRangesFile) do
     local state = range.internalName:match('^%[(.-)%]')
     local containsState = tableContains(parseTargetNumber(rangesSize), state)
-    local stateNum = containsState and 0 or RANGES_CODE[tableFindIndex(RANGES_SELECT, state)]
+    local stateNum = containsState and 0 or rangesCode[tableFindIndex(rangesState, state)]
     rangesSize = rangesSize + stateNum
   end
 
