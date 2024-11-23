@@ -612,7 +612,6 @@ local function searchChains(parametersTable)
     local skip, blockSize, blockIndex = 0, 8192, 1
     while true do
       local results = gg.getResults(blockSize, skip)
-
       if #results == 0 then
         break
       end
@@ -625,7 +624,6 @@ local function searchChains(parametersTable)
 
     for _, range in ipairs(readableRanges) do
       local results = gg.getResults(gg.getResultsCount(), 0, range.start, range['end'])
-
       if #results > 0 then
         if not root[range.internalName] then
           root[range.internalName] = {}
@@ -634,15 +632,15 @@ local function searchChains(parametersTable)
           root[range.internalName].address = range.start
         end
         gg.removeResults(results)
-        if chainsRef.count == chainResultsIimit and chainResultsIimit ~= -1 and chainResultsIimit ~= 0 then
-          break
-        end
         local loadChainParametersTable = {
           lvl, results, root[range.internalName],
           maxOffset, level, binarySearchFunc,
           chainsRef, padding, chainResultsIimit,
         }
         loadChain(loadChainParametersTable)
+        if chainsRef.count == chainResultsIimit and chainResultsIimit ~= -1 and chainResultsIimit ~= 0 then
+          break
+        end
       end
     end
 
@@ -1032,13 +1030,12 @@ local function searchBaseAddress()
   local targetAddressStatiHeaderState = tableContains(staticHeaderState, targetAddressState)
 
   local readableRanges = getRangesList('^/data/*lib*.so*$', targetAddressStatiHeaderState and targetAddressState)
-
   if #readableRanges == 0 then
     print(codeLocale.noMatchHeader)
     return
   end
 
-  local taargetAddressStateNum = rangesCode[tableFindIndex(rangesState, targetAddressState)]
+  local targetAddressStateNum = rangesCode[tableFindIndex(rangesState, targetAddressState)]
 
   if targetAddressStatiHeaderState then
     local soName, index, offset
@@ -1046,7 +1043,7 @@ local function searchBaseAddress()
     local originalResults = gg.getResults(gg.getResultsCount())
 
     gg.clearResults()
-    gg.setRanges(taargetAddressStateNum)
+    gg.setRanges(targetAddressStateNum)
     gg.loadResults(selectResults)
 
     for _, range in ipairs(readableRanges) do
@@ -1132,7 +1129,8 @@ local function searchBaseAddress()
     return
   end
 
-  local rangesSize = taargetAddressStateNum
+  local rangesSize = (targetAddressStateNum == 1048576 or targetAddressStateNum == -2080896) and targetAddressStateNum + 32 or targetAddressStateNum
+
   for _, range in ipairs(readableRangesFile) do
     local state = range.internalName:match('^%[(.-)%]')
     local containsState = tableContains(parseTargetNumber(rangesSize), state)
@@ -1158,7 +1156,6 @@ local function searchBaseAddress()
     chainsRef, level, maxOffset,
     limit, binarySearch, paddingValue,
     chainResultsIimit, startAddress, endAddress,
-
   }
 
   searchChains(parameters)
