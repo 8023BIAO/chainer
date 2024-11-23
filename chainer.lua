@@ -333,19 +333,13 @@ local function getRangesList(matching, targetAddressState)
   for internalName in pairs(interNameSet) do
     for rangeIndex, range in ipairs(gg.getRangesList(internalName)) do
       if range.type:sub(2, 2) == 'w' then
-        if targetAddressState then
-          if range.state == targetAddressState then
+        if targetAddressState and range.state == targetAddressState then
+          range.internalName = string.format('[%s]%s[%d]', range.state, internalName, rangeIndex)
+          table.insert(readableRanges, range)
+         elseif not targetAddressState then
+          if tableContains(staticHeaderState, range.state) then
             range.internalName = string.format('[%s]%s[%d]', range.state, internalName, rangeIndex)
             table.insert(readableRanges, range)
-            break
-          end
-         else
-          for _, value in pairs(staticHeaderState) do
-            if range.state == value then
-              range.internalName = string.format('[%s]%s[%d]', range.state, internalName, rangeIndex)
-              table.insert(readableRanges, range)
-              break
-            end
           end
         end
       end
@@ -1160,6 +1154,7 @@ local function searchBaseAddress()
     chainsRef, level, maxOffset,
     limit, binarySearch, paddingValue,
     chainResultsIimit, startAddress, endAddress,
+
   }
 
   searchChains(parameters)
