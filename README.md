@@ -57,7 +57,7 @@
 
 ## 使用步骤
 
-1. 从 [仓库链接](https://github.com/8023BIAO/chainer/) 下载脚本。
+1. 从 [仓库链接](https://github.com/8023BIAO/chainer/archive/refs/heads/main.zip) 下载脚本。
 2. 将下载内容解压到你想要存放的目录中。
 3. 在将 GG（游戏守护者）挂载到游戏的情况下。
 4. 在保存列表勾选要扫描的一个项目
@@ -119,7 +119,7 @@ This script is for learning and communication purposes only. Please use it with 
 
 ## Usage Steps
 
-1. Download the script from [repository link](https://github.com/8023BIAO/chainer/).
+1. Download the script from [repository link](https://github.com/8023BIAO/chainer/archive/refs/heads/main.zip).
 2. Unzip the downloaded content to the directory where you want to store it.
 3. With GG (GameGuardian) mounted to the game.
 4. Check one item in the save list that you want to scan.
@@ -181,7 +181,7 @@ This script is for learning and communication purposes only. Please use it with 
 
 ## Шаги использования
 
-1. Скачайте скрипт с [ссылки на репозиторий](https://github.com/8023BIAO/chainer/).
+1. Скачайте скрипт с [ссылки на репозиторий](https://github.com/8023BIAO/chainer/archive/refs/heads/main.zip).
 2. Разархивируйте скачанный контент в каталог, где вы хотите его сохранить.
 3. При подключенном GG (GameGuardian) к игре.
 4. Отметьте элемент в списке сохранений, который вы хотите сканировать.
@@ -243,7 +243,7 @@ Este script é apenas para fins de aprendizado e comunicação. Por favor, use-o
 
 ## Etapas de Uso
 
-1. Baixe o script do [link do repositório](https://github.com/8023BIAO/chainer/).
+1. Baixe o script do [link do repositório](https://github.com/8023BIAO/chainer/archive/refs/heads/main.zip).
 2. Descompacte o conteúdo baixado para o diretório onde deseja armazená-lo.
 3. Com o GG (GameGuardian) montado no jogo.
 4. Marque um item na lista de salvamentos que deseja digitalizar.
@@ -306,7 +306,7 @@ Este script é apenas para fins de aprendizado e comunicação. Por favor, use-o
 
 ## خطوات الاستخدام
 
-1. انقر لتحميل السيناريو من [رابط المستودع](https://github.com/8023BIAO/chainer/).
+1. انقر لتحميل السيناريو من [رابط المستودع](https://github.com/8023BIAO/chainer/archive/refs/heads/main.zip).
 2. قم بفك ضغط المحتوى المنزل إلى الدليل الذي ترغب في تخزينه فيه.
 3. مع تثبيت GG (GameGuardian) على اللعبة.
 4. قم بتحديد عنصر واحد في قائمة الحفظ التي ترغب في مسحها ضوئيًا.
@@ -368,7 +368,7 @@ Este script é apenas para fins de aprendizado e comunicação. Por favor, use-o
 
 ## Кроки використання
 
-1. Завантажте сценарій з [посилання на репозиторій](https://github.com/8023BIAO/chainer/).
+1. Завантажте сценарій з [посилання на репозиторій](https://github.com/8023BIAO/chainer/archive/refs/heads/main.zip).
 2. Розпакуйте завантажений вміст до каталогу, де ви хочете його зберегти.
 3. При підключеному GG (GameGuardian) до гри.
 4. Позначте один елемент у списку збережень, який ви хочете сканувати.
