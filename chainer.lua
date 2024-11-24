@@ -7,6 +7,7 @@ local table = table
 local dofile = dofile
 local ipairs = ipairs
 local string = string
+local xpcall = xpcall
 local tostring = tostring
 local tonumber = tonumber
 local loadfile = loadfile
