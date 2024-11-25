@@ -780,7 +780,8 @@ local function parseChainTable(chainsTable, _is64Bit)
       elseif offsetIndex == offsetTableCount then
         local sumValue = tempResultTable[chainIndex] + offsetTable[offsetTableCount]
         local resultAddress = string.format('0x%X', sumValue)
-        if string.len(resultAddress) >= 10 and string.len(resultAddress) <= 18 or string.sub(3, 4) == 'b4' then
+        local addressLen = string.len(resultAddress)
+        if addressLen >= 10 and addressLen <= 18 then
           tempResultTable[chainIndex] = resultAddress
         else
           tempResultTable[chainIndex] = nil
