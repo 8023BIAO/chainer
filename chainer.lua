@@ -28,6 +28,8 @@ local targetProcessName = targetInfo.label
 local configFilePath = filePath:match('(.*/)') .. 'config.lua'
 local paddingValue = is64Bit and 0xFFFFFFFFFFFFFFFF or 0xFFFFFFFF
 
+local searchPointerFunc = gg.searchPointer or gg.internal3
+
 local chunk = loadfile(configFilePath)
 if chunk then config = chunk() end
 config = config or {}
@@ -527,17 +529,19 @@ local function loadChain(parametersTable)
   local lvl, parentData, rootRangeNameTable = parametersTable[1], parametersTable[2], parametersTable[3]
   local maxOffset, levelData, binarySearchFunc = parametersTable[4], parametersTable[5], parametersTable[6]
   local chainsRef, padding, chainResultsIimit = parametersTable[7], parametersTable[8], parametersTable[9]
+  local rangeInternalName = parametersTable[10]
 
   local _next, _ipairs = next, ipairs
   local currentLevelData, nextLevelData
   local leftValue, rightValue, offset, value
   local indexAddress, indexValue
   local tempData = { address = nil, value = nil }
-  local binaryProcessedData = false
+  local blockProcessedData = false
   local rootRangeNameTableAddress = rootRangeNameTable.address
   local binarySearchFuncLeft, binarySearchFuncRight = binarySearchFunc.left, binarySearchFunc.right
 
   local shouldExit = false
+
   for _, parent in _ipairs(parentData) do
     rootRangeNameTable[parent.address - rootRangeNameTableAddress] = { value = parent.value }
   end
@@ -562,16 +566,16 @@ local function loadChain(parametersTable)
         value = valueData.value & padding
         valueData.value = nil
 
-        for _, binaryRule in _ipairs(levelData[currentLevel]) do
-          leftValue = binarySearchFuncLeft(binaryRule, value)
-          rightValue = binarySearchFuncRight(binaryRule, value + maxOffset)
+        for blockIndex, block in _ipairs(levelData[currentLevel]) do
+          leftValue = binarySearchFuncLeft(block, value)
+          rightValue = binarySearchFuncRight(block, value + maxOffset)
 
           if leftValue and rightValue then
-            binaryProcessedData = true
+            blockProcessedData = true
 
             for index = leftValue, rightValue do
-              indexAddress = binaryRule[index].address
-              indexValue = binaryRule[index].value
+              indexAddress = block[index].address
+              indexValue = block[index].value
 
               tempData = { address = indexAddress, value = indexValue }
               offset = tempData.address - value
@@ -584,6 +588,7 @@ local function loadChain(parametersTable)
               end
 
               nextLevelData[#nextLevelData + 1] = tempData
+
               tempData, offset = { address = nil, value = nil }, nil
               indexAddress, indexValue = nil, nil
 
@@ -595,15 +600,15 @@ local function loadChain(parametersTable)
               stopLoop = false
             end
           else
-            if binaryProcessedData then
+            if blockProcessedData then
               break
             end
           end
 
           leftValue, rightValue = nil, nil
 
-          if binaryProcessedData then
-            binaryProcessedData = false
+          if blockProcessedData then
+            blockProcessedData = false
             break
           end
         end
@@ -616,7 +621,8 @@ local function loadChain(parametersTable)
       valueData = nil
 
       key = _next(currentLevelData, key)
-      if shouldExit then
+
+      if shouldExit or not key then
         break
       end
     end
@@ -628,7 +634,43 @@ local function loadChain(parametersTable)
     currentLevelData = nextLevelData
   end
 
-  chainsRef.count = chainsCount
+  chainsRef.count = chainsCount - chainsRef.count
+
+  print(string.format('%s %s%d',
+    rangeInternalName,
+    codeLocale.chainsCount, chainsRef.count
+  ))
+end
+
+local function readableRangesFindChains(parametersTable)
+  local readableRanges, root, lvl = parametersTable[1], parametersTable[2], parametersTable[3]
+  local maxOffset, level, binarySearchFunc = parametersTable[4], parametersTable[5], parametersTable[6]
+  local chainsRef, padding, chainResultsIimit = parametersTable[7], parametersTable[8], parametersTable[9]
+
+  for _, range in ipairs(readableRanges) do
+    local results = gg.getResults(gg.getResultsCount(), 0, range.start, range['end'])
+    if #results > 0 then
+      if not root[range.internalName] then
+        root[range.internalName] = {}
+      end
+      if not root[range.internalName].address then
+        root[range.internalName].address = range.start
+      end
+
+      gg.removeResults(results)
+
+      local loadChainParametersTable = {
+        lvl, results, root[range.internalName],
+        maxOffset, level, binarySearchFunc,
+        chainsRef, padding, chainResultsIimit,
+        range.internalName,
+      }
+
+      results = nil
+
+      loadChain(loadChainParametersTable)
+    end
+  end
 end
 
 local function searchChains(parametersTable)
@@ -649,33 +691,21 @@ local function searchChains(parametersTable)
       skip = skip + blockSize
       level[lvl][blockIndex] = results
       blockIndex = blockIndex + 1
+      results = nil
     end
 
-    gg.searchPointer(maxOffset, startAddress, endAddress, limit)
+    searchPointerFunc(maxOffset, startAddress, endAddress, limit)
 
-    for _, range in ipairs(readableRanges) do
-      local results = gg.getResults(gg.getResultsCount(), 0, range.start, range['end'])
-      if #results > 0 then
-        if not root[range.internalName] then
-          root[range.internalName] = {}
-        end
-        if not root[range.internalName].address then
-          root[range.internalName].address = range.start
-        end
-        gg.removeResults(results)
-        local loadChainParametersTable = {
-          lvl, results, root[range.internalName],
-          maxOffset, level, binarySearchFunc,
-          chainsRef, padding, chainResultsIimit,
-        }
-        loadChain(loadChainParametersTable)
-        if chainsRef.count == chainResultsIimit and chainResultsIimit ~= -1 and chainResultsIimit ~= 0 then
-          break
-        end
-      end
+    if lvl == depth then
+      local FindChainsParametersTable = {
+        readableRanges, root, lvl,
+        maxOffset, level, binarySearchFunc,
+        chainsRef, padding, chainResultsIimit,
+      }
+      readableRangesFindChains(FindChainsParametersTable)
     end
 
-    if gg.getResultsCount() == 0 or chainsRef.count == chainResultsIimit and chainResultsIimit ~= -1 and chainResultsIimit ~= 0 then
+    if gg.getResultsCount() == 0 then
       break
     end
   end
@@ -858,7 +888,10 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
   local addressTable = parseChainTable(ContentTable, _is64Bit)
 
   if not addressTable then
-    print(string.format(codeLocale.noChains .. '\n ' .. codeLocale.time .. ':%.2f', os.clock() - startTime))
+    print(string.format('%s\n%s:%.2f',
+      codeLocale.noChains,
+      codeLocale.time, os.clock() - startTime
+    ))
     return
   end
 
@@ -883,7 +916,10 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
   end
 
   if #showSelectTable == 0 then
-    print(string.format(codeLocale.noChains .. '\n ' .. codeLocale.time .. ':%.2f', os.clock() - startTime))
+    print(string.format('%s\n%s:%.2f',
+      codeLocale.noChains,
+      codeLocale.time, os.clock() - startTime
+    ))
     return
   end
 
@@ -901,7 +937,11 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
     end
 
     local choiceIndex = gg.choice(selectShowTable, nil,
-      string.format(codeLocale.selectChainOut .. '(' .. codeLocale.time .. ':%.2f):', os.clock() - startTime))
+      string.format('%s(%s:%.2f):',
+        codeLocale.selectChainOut,
+        codeLocale.time, os.clock() - startTime
+      ))
+
     if not choiceIndex then return end
 
     local chain = ContentTable[choiceIndex]
@@ -933,7 +973,10 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
   end
 
   local selectionResult = gg.multiChoice(showSelectTable, nil,
-    string.format(codeLocale.selectChainOut .. '(' .. codeLocale.time .. ':%.2f):', os.clock() - startTime))
+    string.format('%s(%s:%.2f):',
+      codeLocale.selectChainOut,
+      codeLocale.time, os.clock() - startTime
+    ))
 
   if not selectionResult then return end
 
@@ -954,6 +997,7 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
         local chainInfo = string.format("[%d] = { '%s', '%s', %d, ['offset'] = { %s } },\n", chainIndex,
           chain[1], chain[2], chain[3], table.concat(chain['offset'], ', '))
         table.insert(buffer, chainInfo)
+
         if #buffer >= bufferSize then
           file:write(table.concat(buffer))
           outChainsCount = outChainsCount + #buffer
@@ -978,18 +1022,15 @@ local function parseChains(targetFlags, _is64Bit, ContentTable)
   end
 
   print(string.format('%s%s\n%s:%.2f %s%d',
-    codeLocale.outputFilePath,
-    path,
-    codeLocale.time,
-    os.clock() - uotputStartTime,
-    codeLocale.chainsCount,
-    outChainsCount
+    codeLocale.outputFilePath, path,
+    codeLocale.time, os.clock() - uotputStartTime,
+    codeLocale.chainsCount, outChainsCount
   ))
 end
 
 local function outputTableFile(root, path)
   gg.saveVariable(root, path)
-  print(codeLocale.tableFile .. path)
+  print(string.format('\n%s%s', codeLocale.tableFile, path))
 end
 
 local function chainsTableParse(tbl, path, outFile, chainsCount)
@@ -1064,8 +1105,7 @@ local function outputExecuTable(root, path, targetFlags)
     tostring(is64Bit) .. ', chainTable) end, print)\nreturn\n')
 
   uotFile:close()
-
-  print(codeLocale.fileValidation .. path .. ' ' .. codeLocale.chainsCount .. chainsCount.val)
+  print('\n' .. codeLocale.fileValidation .. path)
 end
 
 local function searchBaseAddress()
@@ -1209,8 +1249,8 @@ local function searchBaseAddress()
 
   local endTime = os.clock() - startTime
 
-  local elapsedTime = string.format('\n' .. codeLocale.chainsCount .. '%d\n' .. codeLocale.searchTime .. '%.2f',
-    chainsRef.count, endTime)
+  local elapsedTime = string.format('\n%s%.2f', codeLocale.searchTime, endTime)
+
   if chainsRef.count == 0 then
     print(elapsedTime)
     return
@@ -1226,7 +1266,8 @@ local function searchBaseAddress()
   end
 
   local outputTime = os.clock() - (endTime + startTime)
-  print(elapsedTime .. string.format('\n' .. codeLocale.outputTime .. '%.2f', outputTime))
+
+  print(string.format('%s\n%s%.2f', elapsedTime, codeLocale.outputTime, outputTime))
 end
 
 local function getChain(path)
@@ -1259,9 +1300,12 @@ local function getChain(path)
   if input == 1 then
     local pointersOffset = {}
     local offsetCount = #chain
+
     table.move(chain, 2, offsetCount - 1, 1, pointersOffset)
+
     local copyText = string.format('%s + %s', chain[1],
       table.concat(pointersOffset, ' -> ') .. ' + ' .. chain[offsetCount])
+
     gg.copyText(copyText, false)
   elseif input == 2 then
     load(outText)()
@@ -1332,10 +1376,11 @@ local function combinedComparison(mode)
     if chainsCount.val > 0 then
       gg.saveVariable(data, promptValue[3])
     end
-    print(string.format(codeLocale.time .. ':%.2f\n' .. codeLocale.chainsCount .. '%d\n %s',
-      os.clock() - time,
-      chainsCount.val,
-      chainsCount.val > 0 and promptValue[3] or ''))
+    print(string.format('%s:%.2f\n%s%d\n %s',
+      codeLocale.time, os.clock() - time,
+      codeLocale.chainsCount, chainsCount.val,
+      chainsCount.val > 0 and promptValue[3] or ''
+    ))
   elseif mode == "line" then
     time, data = os.clock(), {}
     for line in file1:lines() do
@@ -1351,7 +1396,7 @@ local function combinedComparison(mode)
     end
     file2:close()
     outfile:close()
-    print(string.format(codeLocale.time .. ':%.2f\n %s', os.clock() - time, promptValue[3]))
+    print(string.format('%s:%.2f\n %s', codeLocale.time, os.clock() - time, promptValue[3]))
   end
 end
 
