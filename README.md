@@ -1,5 +1,7 @@
 # chainer
 
+[binarySearchScript](https://github.com/8023BIAO/binarySearch)
+
  [中文简体](#zh_CN) | [English - United States](#en_US) | [Russian](#ru) | [Português - Brasil](#pt_BR) | [Arabic](#ar) | [Ukrainian](#uk)
 
 ---
@@ -375,3 +377,4 @@ Este script é apenas para fins de aprendizado e comunicação. Por favor, use-o
 5. Запустіть `chainer.lua` та натисніть "Пошук вказівника".
 6. Встановіть параметри, натисніть "OK" та зачекайте виведення результатів пошуку.
 
+---
